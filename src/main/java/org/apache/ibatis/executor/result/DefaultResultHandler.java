@@ -27,6 +27,9 @@ import org.apache.ibatis.session.ResultHandler;
  */
 public class DefaultResultHandler implements ResultHandler<Object> {
 
+  /**
+   * 结果数组
+   */
   private final List<Object> list;
 
   public DefaultResultHandler() {
@@ -35,6 +38,7 @@ public class DefaultResultHandler implements ResultHandler<Object> {
 
   @SuppressWarnings("unchecked")
   public DefaultResultHandler(ObjectFactory objectFactory) {
+    // 将当前结果，添加到结果数组中
     list = objectFactory.create(List.class);
   }
 

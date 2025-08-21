@@ -119,6 +119,10 @@ public class Configuration {
   protected String logPrefix;
   protected Class <? extends Log> logImpl;
   protected Class <? extends VFS> vfsImpl;
+
+  /**
+   * {@link BaseExecutor} 本地缓存范围
+   */
   protected LocalCacheScope localCacheScope = LocalCacheScope.SESSION;
   protected JdbcType jdbcTypeForNull = JdbcType.OTHER;
   protected Set<String> lazyLoadTriggerMethods = new HashSet<>(Arrays.asList("equals", "clone", "hashCode", "toString"));
@@ -600,7 +604,9 @@ public class Configuration {
   }
 
   public ParameterHandler newParameterHandler(MappedStatement mappedStatement, Object parameterObject, BoundSql boundSql) {
+    // 创建 ParameterHandler 对象
     ParameterHandler parameterHandler = mappedStatement.getLang().createParameterHandler(mappedStatement, parameterObject, boundSql);
+    // 应用插件
     parameterHandler = (ParameterHandler) interceptorChain.pluginAll(parameterHandler);
     return parameterHandler;
   }
@@ -613,7 +619,9 @@ public class Configuration {
   }
 
   public StatementHandler newStatementHandler(Executor executor, MappedStatement mappedStatement, Object parameterObject, RowBounds rowBounds, ResultHandler resultHandler, BoundSql boundSql) {
+    //  创建 RoutingStatementHandler 对象
     StatementHandler statementHandler = new RoutingStatementHandler(executor, mappedStatement, parameterObject, rowBounds, resultHandler, boundSql);
+    // 应用插件
     statementHandler = (StatementHandler) interceptorChain.pluginAll(statementHandler);
     return statementHandler;
   }
@@ -622,10 +630,18 @@ public class Configuration {
     return newExecutor(transaction, defaultExecutorType);
   }
 
+  /**
+   * 创建执行器
+   * @param transaction 事务对象
+   * @param executorType 执行器类型
+   * @return Executor 对象
+   */
   public Executor newExecutor(Transaction transaction, ExecutorType executorType) {
-    executorType = executorType == null ? defaultExecutorType : executorType;
-    executorType = executorType == null ? ExecutorType.SIMPLE : executorType;
+    // 获取执行器类型
+    executorType = executorType == null ? defaultExecutorType : executorType; // 默认
+    executorType = executorType == null ? ExecutorType.SIMPLE : executorType; // 使用 xecutorType.SIMPLE
     Executor executor;
+    // 创建对应实现的 Executor 对象
     if (ExecutorType.BATCH == executorType) {
       executor = new BatchExecutor(this, transaction);
     } else if (ExecutorType.REUSE == executorType) {
@@ -633,9 +649,11 @@ public class Configuration {
     } else {
       executor = new SimpleExecutor(this, transaction);
     }
+    // 如果开启缓存，创建 CachingExecutor 对象，进行包装
     if (cacheEnabled) {
       executor = new CachingExecutor(executor);
     }
+    // 应用插件
     executor = (Executor) interceptorChain.pluginAll(executor);
     return executor;
   }
