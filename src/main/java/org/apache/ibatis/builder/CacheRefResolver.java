@@ -21,7 +21,15 @@ import org.apache.ibatis.cache.Cache;
  * @author Clinton Begin
  */
 public class CacheRefResolver {
+
+  /**
+   * 构造器助手
+   */
   private final MapperBuilderAssistant assistant;
+
+  /**
+   * Cache 指向的命名空间
+   */
   private final String cacheRefNamespace;
 
   public CacheRefResolver(MapperBuilderAssistant assistant, String cacheRefNamespace) {
