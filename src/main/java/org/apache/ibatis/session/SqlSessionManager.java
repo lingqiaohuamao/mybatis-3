@@ -37,10 +37,14 @@ public class SqlSessionManager implements SqlSessionFactory, SqlSession {
   private final SqlSessionFactory sqlSessionFactory;
   private final SqlSession sqlSessionProxy;
 
+  /**
+   * 线程变量，当前线程的 SqlSession 对象
+   */
   private final ThreadLocal<SqlSession> localSqlSession = new ThreadLocal<>();
 
   private SqlSessionManager(SqlSessionFactory sqlSessionFactory) {
     this.sqlSessionFactory = sqlSessionFactory;
+    // 创建 SqlSession 的代理对象
     this.sqlSessionProxy = (SqlSession) Proxy.newProxyInstance(
         SqlSessionFactory.class.getClassLoader(),
         new Class[]{SqlSession.class},
@@ -344,20 +348,28 @@ public class SqlSessionManager implements SqlSessionFactory, SqlSession {
 
     @Override
     public Object invoke(Object proxy, Method method, Object[] args) throws Throwable {
+      // 情况一，如果 localSqlSession 中存在 SqlSession 对象，说明是自管理模式
       final SqlSession sqlSession = SqlSessionManager.this.localSqlSession.get();
       if (sqlSession != null) {
         try {
+          // 直接执行方法
           return method.invoke(sqlSession, args);
         } catch (Throwable t) {
           throw ExceptionUtil.unwrapThrowable(t);
         }
-      } else {
+      }
+      // 情况二，如果没有 SqlSession 对象，则直接创建一个
+      else {
+        // 创建新的 SqlSession 对象
         try (SqlSession autoSqlSession = openSession()) {
           try {
+            // 执行方法
             final Object result = method.invoke(autoSqlSession, args);
+            // 提交 SqlSession 对象
             autoSqlSession.commit();
             return result;
           } catch (Throwable t) {
+            // 发生异常时，回滚
             autoSqlSession.rollback();
             throw ExceptionUtil.unwrapThrowable(t);
           }
